@@ -1,0 +1,2 @@
+# Ignore the .env file to hide the secret keys
+.env
