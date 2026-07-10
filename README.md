@@ -1,10 +1,21 @@
 # Successful response screenshots
-![Get All Students](/images/Get%20All%20Students.PNG)
-![Get Student By Id](/images/Get%20Student%20By%20Id.PNG)
-![Create a Student](/images/Create%20a%20Student.PNG)
-![Update a Student](/images/Update%20a%20Student.PNG)
-![Delete a Student](/images/Delete%20a%20Student.PNG)
+
+Signup and Login
+![Signup](/images/SignUp.PNG)
+![Login](/images/Login.PNG)
+
+CRUD operations on Student with jwt token of allowed role which is "admin"
+![Get all Students](/images/GetAllStudents.PNG)
+![Get a Student by Id](/images/GetStudentById.PNG)
+![Create a Student](/images/CreateStudent.PNG)
+![Update a Student by Id](/images/UpdateStudentById.PNG)
+![Delete a Student by Id](/images/DeleteStudentById.PNG)
+
+Request time
+![Time taken by request](/images/RequestTime.PNG)
 
 # Error response screenshots
-![Error while Deleting a Student](/images/Delete%20Error.PNG)
-![Error for giving wrong data while creation](/images/Phone%20Number%20Error.PNG)
+
+Trying to create a student with jwt token of role "teacher" which shouldn't be allowed
+![Invalid role while creating a student](/images/ErrorInvalidRole.PNG)
+![Error for not adding Authorization header](/images/ErrorMissingAuthorization.PNG)

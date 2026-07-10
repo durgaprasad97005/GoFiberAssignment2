@@ -28,7 +28,7 @@ func SetupApp() *fiber.App {
 	db.ConnectDB()
 
 	// Declaring routes
-	routes.StudentsRoutes(app)
+	routes.SetupRoutes(app)
 	
 	return app
 }
