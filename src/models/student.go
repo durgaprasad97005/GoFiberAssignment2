@@ -1,8 +1,12 @@
 package models
 
-import "go.mongodb.org/mongo-driver/v2/bson"
+import (
+	"time"
 
-// struct used for both creation and representing database model
+	"go.mongodb.org/mongo-driver/v2/bson"
+)
+
+// struct used for request parsing
 type Student struct {
 	ID      bson.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
 	Name    string        `json:"name" bson:"name" validate:"required"`
@@ -13,12 +17,16 @@ type Student struct {
 	Address string        `json:"address" bson:"address"`
 }
 
-// struct used for update
-type UpdateStudentDTO struct {
-	Name    *string `json:"name" bson:"name,omitempty"`
-	Email   *string `json:"email" bson:"email,omitempty"`
-	Branch  *string `json:"branch" bson:"branch,omitempty"`
-	Age     *int    `json:"age" bson:"age,omitempty" validate:"omitempty,min=0"`
-	Phone   *string `json:"phone" bson:"phone,omitempty"`
-	Address *string `json:"address" bson:"address,omitempty"`
+// Audit fields
+type Audit struct {
+	CreatedAt      time.Time     `bson:"createdAt,omitempty"`
+	CreatedBy      bson.ObjectID `bson:"createdBy,omitempty"`
+	LastModifiedAt time.Time     `bson:"lastModifiedAt"`
+	LastModifiedBy bson.ObjectID `bson:"lastModifiedBy"`
+}
+
+// DTO object for student - represents database model
+type StudentDTO struct {
+	Student `bson:",inline"`
+	Audit   `bson:",inline"`
 }

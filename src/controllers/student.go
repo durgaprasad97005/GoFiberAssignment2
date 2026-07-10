@@ -15,12 +15,14 @@ import (
 )
 
 // Get all students with filter and pagination
-func GetStudents(c fiber.Ctx) error {
+func Find(c fiber.Ctx) error {
 	// Collection
 	collection := db.GetCollection("students")
 	if collection == nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Internal server error. Unable to find collection",
+			"success": false,
+			"message": "Unable to find collection",
+			"error":   "Internal server error",
 		})
 	}
 
@@ -63,7 +65,8 @@ func GetStudents(c fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
-			"message": "Internal server error: " + err.Error(),
+			"message": "Internal server error",
+			"error":   err.Error(),
 		})
 	}
 
@@ -74,7 +77,8 @@ func GetStudents(c fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
-			"message": "Internal server error: " + err.Error(),
+			"message": "Internal server error",
+			"error":   err.Error(),
 		})
 	}
 
@@ -87,13 +91,14 @@ func GetStudents(c fiber.Ctx) error {
 }
 
 // Get a student by Id
-func GetStudentById(c fiber.Ctx) error {
+func Get(c fiber.Ctx) error {
 	// Get student id from route/path parameters
 	id := c.Params("id")
 	if id == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
 			"message": "Student's object Id is required",
+			"error":   "Object Id not found",
 		})
 	}
 
@@ -102,7 +107,8 @@ func GetStudentById(c fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
-			"message": "Invalid Id: " + err.Error(),
+			"message": "Invalid object Id",
+			"error":   err.Error(),
 		})
 	}
 
@@ -111,7 +117,8 @@ func GetStudentById(c fiber.Ctx) error {
 	if collection == nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
-			"message": "Internal server error",
+			"message": "Unable to find collection",
+			"error":   "Internal server error",
 		})
 	}
 
@@ -127,6 +134,7 @@ func GetStudentById(c fiber.Ctx) error {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"success": false,
 			"message": "Student not found",
+			"error":   err.Error(),
 		})
 	}
 
@@ -134,7 +142,8 @@ func GetStudentById(c fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
-			"message": "Internal server error: " + err.Error(),
+			"message": "Internal server error",
+			"error":   err.Error(),
 		})
 	}
 
@@ -147,13 +156,14 @@ func GetStudentById(c fiber.Ctx) error {
 }
 
 // Create a student
-func CreateStudent(c fiber.Ctx) error {
+func Create(c fiber.Ctx) error {
 	// Get collection
 	collection := db.GetCollection("students")
 	if collection == nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
-			"message": "Internal server error",
+			"message": "Unable to find collection",
+			"error":   "Internal server error",
 		})
 	}
 
@@ -162,7 +172,8 @@ func CreateStudent(c fiber.Ctx) error {
 	if err := c.Bind().Body(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
-			"message": "Error parsing body: " + err.Error(),
+			"message": "Error parsing body",
+			"error":   err.Error(),
 		})
 	}
 
@@ -171,19 +182,42 @@ func CreateStudent(c fiber.Ctx) error {
 	if err := validate.Struct(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
-			"message": "Validation errors for invalid data: " + err.Error(),
+			"message": "Validation errors for invalid data",
+			"error":   err.Error(),
 		})
+	}
+
+	// Get createdBy user id
+	userId, err := bson.ObjectIDFromHex(c.Locals("userId").(string))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false, 
+			"message": "Error getting CreatedBy user id", 
+			"error": err.Error(), 
+		})
+	}
+
+	// converting body to DTO object
+	studentDto := models.StudentDTO{
+		Student: body,
+		Audit: models.Audit{
+			CreatedAt:      time.Now(),
+			CreatedBy: userId,
+			LastModifiedAt: time.Now(),
+			LastModifiedBy: userId, 
+		},
 	}
 
 	// Insert new student to database
 	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
 	defer cancel()
 
-	result, err := collection.InsertOne(ctx, body)
+	result, err := collection.InsertOne(ctx, studentDto)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
-			"message": "Internal server error: " + err.Error(),
+			"message": "Internal server error",
+			"error":   err.Error(),
 		})
 	}
 
@@ -197,13 +231,14 @@ func CreateStudent(c fiber.Ctx) error {
 }
 
 // Update a student by Id
-func UpdateStudentById(c fiber.Ctx) error {
+func Update(c fiber.Ctx) error {
 	// Get the id from request
 	id := c.Params("id")
 	if id == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
-			"message": "Id is required.",
+			"message": "Student's object Id is required.",
+			"error":   "Object Id not found",
 		})
 	}
 
@@ -212,7 +247,8 @@ func UpdateStudentById(c fiber.Ctx) error {
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
-			"message": "Invalid Id: " + err.Error(),
+			"message": "Invalid Id",
+			"error":   err.Error(),
 		})
 	}
 
@@ -221,16 +257,18 @@ func UpdateStudentById(c fiber.Ctx) error {
 	if collection == nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
-			"message": "Internal server error",
+			"message": "Collection not found",
+			"error":   "Internal server error",
 		})
 	}
 
 	// Parse the body
-	var body models.UpdateStudentDTO
+	var body models.Student
 	if err := c.Bind().Body(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
-			"message": "Error parsing body: " + err.Error(),
+			"message": "Error parsing body",
+			"error":   err.Error(),
 		})
 	}
 
@@ -239,26 +277,59 @@ func UpdateStudentById(c fiber.Ctx) error {
 	if err := validate.Struct(&body); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"success": false,
-			"message": "Unformatted data: " + err.Error(),
+			"message": "Unformatted data",
+			"error":   err.Error(),
 		})
+	}
+
+	// Get createdBy user id
+	userId, err := bson.ObjectIDFromHex(c.Locals("userId").(string))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": false, 
+			"message": "Error getting CreatedBy user id", 
+			"error": err.Error(), 
+		})
+	}
+
+	// converting body to DTO object
+	studentDto := models.StudentDTO{
+		Student: body,
+		Audit: models.Audit{
+			LastModifiedAt: time.Now(), 
+			LastModifiedBy: userId,
+		},
 	}
 
 	// Updating document
 	ctx, cancel := context.WithTimeout(c.Context(), 5*time.Second)
 	defer cancel()
 
-	result, err := collection.UpdateOne(ctx, bson.M{"_id": objId}, bson.M{"$set": body})
+	result, err := collection.UpdateOne(ctx, bson.M{"_id": objId}, bson.M{"$set": studentDto})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"success": false,
-			"message": "Internal server error: " + err.Error(),
+			"message": "Internal server error",
+			"error":   err.Error(),
 		})
 	}
 
 	if result.MatchedCount == 0 {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"success": false,
-			"message": "Id not found",
+			"message": "No matching Id found",
+			"error":   "Object Id not found",
+		})
+	}
+
+	// Get the updated student
+	var updatedStd models.Student
+	err = collection.FindOne(ctx, bson.M{"_id": objId}).Decode(&updatedStd)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"success": true,
+			"message": "Updated successfully, but unable return updated data",
+			"error":   err.Error(),
 		})
 	}
 
@@ -266,12 +337,12 @@ func UpdateStudentById(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(fiber.Map{
 		"success": true,
 		"message": "Updated student successfully",
-		"data":    result,
+		"data":    updatedStd,
 	})
 }
 
 // Delete a student by Id
-func DeleteStudentById(c fiber.Ctx) error {
+func Delete(c fiber.Ctx) error {
 	// Get the id from request
 	id := c.Params("id")
 	if id == "" {
