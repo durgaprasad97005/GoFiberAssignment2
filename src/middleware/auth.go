@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/durgaprasad97005/GoFiberAssignment2/src/utils"
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -19,11 +20,12 @@ func Auth(c fiber.Ctx) error {
 	// getting Authorization header
 	authHeader := c.Get("Authorization")
 	if authHeader == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"success": false, 
-			"message": "Unauthorized", 
-			"error": "Missing Authorization header",
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusUnauthorized, 
+			"Unauthorized", 
+			"Missing Authorization header", 
+		)
 	}
 
 	// Get token from tokenString
@@ -33,27 +35,28 @@ func Auth(c fiber.Ctx) error {
 	})
 
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false, 
-			"message": "Error parsing token", 
-			"error": err.Error(), 
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Error parsing token", 
+			err.Error(), 
+		)
 	}
 
 	// Check token expiration 
 	claims := token.Claims.(jwt.MapClaims)
 
 	if claims["exp"].(float64) < float64(time.Now().Unix()) {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"success": false, 
-			"message": "Unauthorized", 
-			"error": "Token expired", 
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusUnauthorized, 
+			"Unauthorized", 
+			"Token expired", 
+		)
 	}
 
 	// Store required data in locals
 	c.Locals("userId", claims["userId"])
-	c.Locals("role", claims["role"])
 
 	result := c.Next()
 

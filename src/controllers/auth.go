@@ -20,8 +20,6 @@ var jwtSigningKey = []byte(os.Getenv("JWT_SIGNING_KEY"))
 func getJwtTokenString(user models.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"userId": user.ID.Hex(),
-		"email":  user.Email,
-		"role":   user.Role,
 		"exp":    time.Now().Add(3 * time.Hour).Unix(),
 	})
 

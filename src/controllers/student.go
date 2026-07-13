@@ -7,6 +7,7 @@ import (
 
 	"github.com/durgaprasad97005/GoFiberAssignment2/src/db"
 	"github.com/durgaprasad97005/GoFiberAssignment2/src/models"
+	"github.com/durgaprasad97005/GoFiberAssignment2/src/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -19,11 +20,12 @@ func Find(c fiber.Ctx) error {
 	// Collection
 	collection := db.GetCollection("students")
 	if collection == nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "Unable to find collection",
-			"error":   "Internal server error",
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Unable to find collection", 
+			"Internal server error", 
+		)
 	}
 
 	// Context
@@ -63,11 +65,12 @@ func Find(c fiber.Ctx) error {
 	// Call db to get data
 	cursor, err := collection.Find(ctx, filter, findOptions)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "Internal server error",
-			"error":   err.Error(),
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Internal server error", 
+			err.Error(), 
+		)
 	}
 
 	// Parse the result to students array
@@ -75,19 +78,21 @@ func Find(c fiber.Ctx) error {
 
 	err = cursor.All(ctx, &students)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "Internal server error",
-			"error":   err.Error(),
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Internal server error", 
+			err.Error(), 
+		)
 	}
 
 	// Success response
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"success": true,
-		"message": "Successfully returned students data",
-		"data":    students,
-	})
+	return utils.Success(
+		c, 
+		fiber.StatusOK, 
+		"Successfully returned students data", 
+		students, 
+	)
 }
 
 // Get a student by Id
@@ -95,31 +100,34 @@ func Get(c fiber.Ctx) error {
 	// Get student id from route/path parameters
 	id := c.Params("id")
 	if id == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": "Student's object Id is required",
-			"error":   "Object Id not found",
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusBadRequest, 
+			"Student's object Id is required", 
+			"Object Id not found", 
+		)
 	}
 
 	// Parsing the string id to objId
 	objId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": "Invalid object Id",
-			"error":   err.Error(),
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusBadRequest, 
+			"Invalid object Id", 
+			err.Error(), 
+		)
 	}
 
 	// Get collection
 	collection := db.GetCollection("students")
 	if collection == nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "Unable to find collection",
-			"error":   "Internal server error",
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Unable to find collection", 
+			"Internal server error", 
+		)
 	}
 
 	// Get the student from db
@@ -131,28 +139,31 @@ func Get(c fiber.Ctx) error {
 
 	// If document not found
 	if err == mongo.ErrNoDocuments {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"success": false,
-			"message": "Student not found",
-			"error":   err.Error(),
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusNotFound, 
+			"Student not found", 
+			err.Error(), 
+		)
 	}
 
 	// If some other error occurred
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "Internal server error",
-			"error":   err.Error(),
-		})
+		return utils.Success(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Internal server error", 
+			err.Error(), 
+		)
 	}
 
 	// Success response
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"success": true,
-		"message": "Student found",
-		"data":    student,
-	})
+	return utils.Success(
+		c, 
+		fiber.StatusOK, 
+		"Student found", 
+		student, 
+	)
 }
 
 // Create a student
@@ -160,41 +171,45 @@ func Create(c fiber.Ctx) error {
 	// Get collection
 	collection := db.GetCollection("students")
 	if collection == nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "Unable to find collection",
-			"error":   "Internal server error",
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Unable to find collection", 
+			"Internal server error", 
+		)
 	}
 
 	// Parse the body
 	var body models.Student
 	if err := c.Bind().Body(&body); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": "Error parsing body",
-			"error":   err.Error(),
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusBadRequest, 
+			"Error parsing body", 
+			err.Error(), 
+		)
 	}
 
 	// validation check
 	var validate = validator.New()
 	if err := validate.Struct(&body); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": "Validation errors for invalid data",
-			"error":   err.Error(),
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusBadRequest, 
+			"Validation error for invalid data", 
+			err.Error(), 
+		)
 	}
 
 	// Get createdBy user id
 	userId, err := bson.ObjectIDFromHex(c.Locals("userId").(string))
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false, 
-			"message": "Error getting CreatedBy user id", 
-			"error": err.Error(), 
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Error getting CreatedBy user id", 
+			err.Error(), 
+		)
 	}
 
 	// converting body to DTO object
@@ -214,20 +229,22 @@ func Create(c fiber.Ctx) error {
 
 	result, err := collection.InsertOne(ctx, studentDto)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "Internal server error",
-			"error":   err.Error(),
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Internal server error", 
+			err.Error(), 
+		)
 	}
 
 	// Success response
 	body.ID = result.InsertedID.(bson.ObjectID)
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"success": true,
-		"message": "Successfully inserted student",
-		"data":    body,
-	})
+	return utils.Success(
+		c, 
+		fiber.StatusCreated, 
+		"Successfully inserted student", 
+		body, 
+	)
 }
 
 // Update a student by Id
@@ -235,61 +252,67 @@ func Update(c fiber.Ctx) error {
 	// Get the id from request
 	id := c.Params("id")
 	if id == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": "Student's object Id is required.",
-			"error":   "Object Id not found",
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusBadRequest, 
+			"Student's object Id is required", 
+			"Object Id not found", 
+		)
 	}
 
 	// Parse the id to get objId
 	objId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "Invalid Id",
-			"error":   err.Error(),
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Invalid Id", 
+			err.Error(), 
+		)
 	}
 
 	// Get collection
 	collection := db.GetCollection("students")
 	if collection == nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "Collection not found",
-			"error":   "Internal server error",
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Collection not found", 
+			"Internal server error", 
+		)
 	}
 
 	// Parse the body
 	var body models.Student
 	if err := c.Bind().Body(&body); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": "Error parsing body",
-			"error":   err.Error(),
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusBadRequest, 
+			"Error parsing body", 
+			err.Error(), 
+		)
 	}
 
 	// validation check
 	validate := validator.New()
 	if err := validate.Struct(&body); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": "Unformatted data",
-			"error":   err.Error(),
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusBadRequest, 
+			"Unformatted data", 
+			err.Error(), 
+		)
 	}
 
 	// Get createdBy user id
 	userId, err := bson.ObjectIDFromHex(c.Locals("userId").(string))
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false, 
-			"message": "Error getting CreatedBy user id", 
-			"error": err.Error(), 
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Error getting CreatedBy user id", 
+			err.Error(), 
+		)
 	}
 
 	// converting body to DTO object
@@ -307,38 +330,42 @@ func Update(c fiber.Ctx) error {
 
 	result, err := collection.UpdateOne(ctx, bson.M{"_id": objId}, bson.M{"$set": studentDto})
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "Internal server error",
-			"error":   err.Error(),
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Internal server error", 
+			err.Error(), 
+		)
 	}
 
 	if result.MatchedCount == 0 {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"success": false,
-			"message": "No matching Id found",
-			"error":   "Object Id not found",
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusNotFound, 
+			"No matching Id found", 
+			"Object Id not found", 
+		)
 	}
 
 	// Get the updated student
 	var updatedStd models.Student
 	err = collection.FindOne(ctx, bson.M{"_id": objId}).Decode(&updatedStd)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": true,
-			"message": "Updated successfully, but unable return updated data",
-			"error":   err.Error(),
-		})
+		return utils.Success(
+			c, 
+			fiber.StatusOK, 
+			"Updated successfully, but unable to return updated data", 
+			nil, 
+		)
 	}
 
 	// Success response
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"success": true,
-		"message": "Updated student successfully",
-		"data":    updatedStd,
-	})
+	return utils.Success(
+		c, 
+		fiber.StatusOK, 
+		"Updated student successfully", 
+		updatedStd, 
+	)
 }
 
 // Delete a student by Id
@@ -346,28 +373,34 @@ func Delete(c fiber.Ctx) error {
 	// Get the id from request
 	id := c.Params("id")
 	if id == "" {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"success": false,
-			"message": "Id is required.",
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusBadRequest, 
+			"Id is required", 
+			"Cannot find Id", 
+		)
 	}
 
 	// Parse the id to get objId
 	objId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "Invalid Id: " + err.Error(),
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Invalid Id", 
+			err.Error(), 
+		)
 	}
 
 	// Get collection
 	collection := db.GetCollection("students")
 	if collection == nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "Internal server error",
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Internal server error", 
+			"Cannot find the collection in database", 
+		)
 	}
 
 	// Delete student
@@ -376,23 +409,28 @@ func Delete(c fiber.Ctx) error {
 
 	result, err := collection.DeleteOne(ctx, bson.M{"_id": objId})
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"success": false,
-			"message": "Internal server error: " + err.Error(),
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusInternalServerError, 
+			"Internal server error", 
+			err.Error(), 
+		)
 	}
 
 	if result.DeletedCount == 0 {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"success": false,
-			"message": "Id not found",
-		})
+		return utils.Error(
+			c, 
+			fiber.StatusNotFound, 
+			"No documents found to delete", 
+			"Id not found", 
+		)
 	}
 
 	// Success response
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{
-		"success": true,
-		"message": "Successfully deleted student",
-		"data":    result,
-	})
+	return utils.Success(
+		c, 
+		fiber.StatusOK, 
+		"Successfully deleted student", 
+		result, 
+	)
 }
